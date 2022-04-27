@@ -1,37 +1,117 @@
-## Welcome to GitHub Pages
+---
+title: "Flex Dashboard Example"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
 
-You can use the [editor on GitHub](https://github.com/sgrts/TestProject/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```{r setup, include=FALSE}
+library(flexdashboard)
 ```
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+Column {data-width=650}
+-----------------------------------------------------------------------
 
-### Jekyll Themes
+### Chart A
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/sgrts/TestProject/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+```{r}
+library(plotly)
+library(rjson)
 
-### Support or Contact
+url <- 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+counties <- rjson::fromJSON(file=url)
+url2<- "https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv"
+df <- read.csv(url2, colClasses=c(fips="character"))
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+fig <- plot_ly()
+fig <- fig %>% add_trace(
+    type="choropleth",
+    geojson=counties,
+    locations=df$fips,
+    z=df$unemp,
+    colorscale="Viridis",
+    zmin=0,
+    zmax=12,
+    marker=list(line=list(
+      width=0)
+    )
+  )
+fig <- fig %>% colorbar(title = "Unemployment Rate (%)")
+fig <- fig %>% layout(
+    title = "2016 US Unemployment by County"
+)
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+fig <- fig %>% layout(
+    geo = g
+  )
+
+fig
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+library(plotly)
+library(MASS)
+
+covmat <- matrix(c(0.8, 0.4, 0.3, 0.8), nrow = 2, byrow = T)
+df <- mvrnorm(n = 10000, c(0,0), Sigma = covmat)
+df <- as.data.frame(df)
+
+colnames(df) <- c("x", "y")
+fig <- plot_ly(df, x = ~x, y = ~y, alpha = 0.3)
+fig <- fig %>% add_markers(marker = list(line = list(color = "black", width = 1)))
+fig <- fig %>% layout(
+    title = "Drop down menus - Plot type",
+    xaxis = list(domain = c(0.1, 1)),
+    yaxis = list(title = "y"),
+    updatemenus = list(
+      list(
+        y = 0.8,
+        buttons = list(
+
+          list(method = "restyle",
+               args = list("type", "scatter"),
+               label = "Scatter"),
+
+          list(method = "restyle",
+               args = list("type", "histogram2d"),
+               label = "2D Histogram")))
+    ))
+
+fig
+```
+
+### Chart C
+
+```{r}
+# volcano is a numeric matrix that ships with R
+fig <- plot_ly(z = ~volcano) %>% add_surface(
+  contours = list(
+    z = list(
+      show=TRUE,
+      usecolormap=TRUE,
+      highlightcolor="#ff0000",
+      project=list(z=TRUE)
+      )
+    )
+  )
+fig <- fig %>% layout(
+    scene = list(
+      camera=list(
+        eye = list(x=1.87, y=0.88, z=-0.64)
+        )
+      )
+  )
+
+fig
+```
